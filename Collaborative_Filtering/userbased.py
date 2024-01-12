@@ -56,8 +56,8 @@ limit = 5 # number of common movies users must have in common in order to consid
 neighbors = [] # store neighbors in this list
 averages = [] # each user's average rating for later use
 deviations = [] # each user's deviation for later use
-pairsDict = {}
-visited = set()
+pairsDict = {} # which pairs we already calculated score for as (j,i) and (i,j) are symmetric
+visited = set() # which pairs we already considered as (j,i) and (i,j) are symmetric
 
 for i in range(N):
   # find the 25 closest users to user i
