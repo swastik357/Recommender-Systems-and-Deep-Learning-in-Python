@@ -12,7 +12,8 @@ import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
 
 from keras.models import Model
-from keras.layers import Input, Embedding, Dot, Add, Flatten
+from keras.layers import Input, Embedding, Flatten, Dense, Concatenate
+from keras.layers import Dropout, BatchNormalization, Activation
 from keras.regularizers import l2
 from keras.optimizers import SGD, Adam
 
@@ -32,39 +33,27 @@ df_test = df.iloc[cutoff:]
 K = 10 # latent dimensionality
 mu = df_train.rating.mean()
 epochs = 15
-reg = 0. # regularization penalty
+# reg = 0.0001 # regularization penalty
 
 
 # keras model
 u = Input(shape=(1,))
 m = Input(shape=(1,))
-u_embedding = Embedding(N, K, embeddings_regularizer=l2(reg))(u) # (N, 1, K)
-m_embedding = Embedding(M, K, embeddings_regularizer=l2(reg))(m) # (N, 1, K)
+u_embedding = Embedding(N, K)(u) # (N, 1, K)
+m_embedding = Embedding(M, K)(m) # (N, 1, K)
+u_embedding = Flatten()(u_embedding) # (N, K)
+m_embedding = Flatten()(m_embedding) # (N, K)
+x = Concatenate()([u_embedding, m_embedding]) # (N, 2K)
 
-# subsubmodel = Model([u, m], [u_embedding, m_embedding])
-# user_ids = df_train.userId.values[0:5]
-# movie_ids = df_train.movie_idx.values[0:5]
-# print("user_ids.shape", user_ids.shape)
-# p = subsubmodel.predict([user_ids, movie_ids])
-# print("p[0].shape:", p[0].shape)
-# print("p[1].shape:", p[1].shape)
-# exit()
-
-
-u_bias = Embedding(N, 1, embeddings_regularizer=l2(reg))(u) # (N, 1, 1)
-m_bias = Embedding(M, 1, embeddings_regularizer=l2(reg))(m) # (N, 1, 1)
-x = Dot(axes=2)([u_embedding, m_embedding]) # (N, 1, 1)
-
-# submodel = Model([u, m], x)
-# user_ids = df_train.userId.values[0:5]
-# movie_ids = df_train.movie_idx.values[0:5]
-# p = submodel.predict([user_ids, movie_ids])
-# print("p.shape:", p.shape)
-# exit()
-
-
-x = Add()([x, u_bias, m_bias])
-x = Flatten()(x) # (N, 1)
+# the neural network
+x = Dense(400)(x)
+# x = BatchNormalization()(x)
+x = Activation('relu')(x)
+# x = Dropout(0.5)(x)
+# x = Dense(100)(x)
+# x = BatchNormalization()(x)
+# x = Activation('relu')(x)
+x = Dense(1)(x)
 
 model = Model(inputs=[u, m], outputs=x)
 model.compile(
